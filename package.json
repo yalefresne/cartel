@@ -1,0 +1,37 @@
+{
+  "name": "cartel",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "jest --coverage",
+    "coverage": "jest --collect-coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raffleberry/cartel.git"
+  },
+  "author": "Debadutta Padhial",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/raffleberry/cartel/issues"
+  },
+  "homepage": "https://github.com/raffleberry/cartel#readme",
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "mongoose": "^5.13.7"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.0.1",
+    "jest": "^27.0.6",
+    "supertest": "^6.1.5"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ]
+  }
+}
