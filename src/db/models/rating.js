@@ -10,7 +10,8 @@ const ratingSchema = new mongoose.Schema({
     required: true
   },
   rating: {
-    // true for like, false for dislike
+    // true for like, false for dislike,
+    // undefined if user liked/disliked, then again removed their rating
     type: Boolean,
     default: undefined
   }

@@ -1,6 +1,5 @@
 const router = require("express").Router();
 const actions = require("../../../db/actions");
-const Post = require("../../../db/models/post");
 const middlewares = require("../middlewares");
 
 router.get("/posts", middlewares.isDbReady, async (req, res) => {
@@ -8,18 +7,13 @@ router.get("/posts", middlewares.isDbReady, async (req, res) => {
   if (postId) {
     try {
       const payload = await actions.postWithReplies(postId);
-      if (payload.error) res.status(404);
       res.json(payload);
     } catch (err) {
-      if (
-        err.message.includes("CastError") ||
-        err.message.includes("NotFound")
-      ) {
+      if (err.message.includes("NotFound")) {
         res.status(404).json({
           error: "No such Post",
         });
       } else {
-        console.log(err);
         res.status(400).json({
           error: "Invalid Request",
           details: err,
@@ -33,8 +27,8 @@ router.get("/posts", middlewares.isDbReady, async (req, res) => {
         data: payload,
       });
     } catch (err) {
-      res.status(503).json({
-        error: "Service Unavailable",
+      res.status(400).json({
+        error: "Invalid Request",
         details: err,
       });
     }
@@ -50,14 +44,20 @@ router.post(
       let data = req.body;
       let post = await actions.createPost(data);
       res.json({
-        postId: post.id,
+        postId: post._id,
         createdAt: post.get("createdAt"),
       });
-    } catch (error) {
-      res.status(400).json({
-        error: "Invalid Request",
-        details: error,
-      });
+    } catch (err) {
+      if (err.message.includes("NotFound")) {
+        res.status(404).json({
+          error: err.message,
+        });
+      } else {
+        res.status(400).json({
+          error: "Invalid Request",
+          details: err,
+        });
+      }
     }
   }
 );
