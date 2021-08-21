@@ -167,12 +167,6 @@ async function updateRating(rating, changedRating) {
     }
   }
 
-  if (changedRating === false && existingRating === null) {
-    console.log(updateMap);
-    console.log(await Post.findOne(rating.get("postId")).exec());
-    console.log(rating);
-  }
-
   if (changedRating != existingRating) {
     await Rating.findByIdAndUpdate(rating._id, {
       rating: changedRating,
@@ -181,13 +175,7 @@ async function updateRating(rating, changedRating) {
     const newRating = await Post.findByIdAndUpdate(
       rating.get("postId"),
       updateMap
-    ).exec();
-    if (changedRating === false && existingRating === null) {
-      console.log(updateMap);
-      console.log(await Post.findOne(rating.get("postId")).exec());
-      console.log(rating);
-    }
-  
+    ).exec();  
     return {
       data: newRating,
     };
