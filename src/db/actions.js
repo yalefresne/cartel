@@ -3,12 +3,13 @@
  * which perform CRUD operations
  * on the database.
  */
-const { Post, User } = require("./models");
+const { Post, User, Rating } = require("./models");
 const {
   postExists,
   userExists,
   validatePostContent,
   validUserName,
+  validateRating,
 } = require("../validators");
 const { randomUserSuffix } = require("../utils");
 
@@ -42,14 +43,14 @@ async function getPosts() {
 
 async function createPost(data) {
   try {
+    let postData = {};
+
     let contentErr = validatePostContent(data.content);
     if (contentErr !== "") throw new Error(contentErr);
 
     if ((await userExists(data.userId)) === null) {
       throw new Error(`UserNotFound - userId ${data.userId}`);
     }
-
-    let postData = {};
 
     if (data.replyId) {
       if ((await postExists(data.replyId)) === null) {
@@ -109,9 +110,99 @@ async function createUser(name) {
   }
 }
 
+async function createRating(data) {
+  const r = validateRating(data);
+  if (r.error === undefined) {
+    await r.data.save();
+    if (data.rating === true) {
+      await Post.findByIdAndUpdate(data.postId, {
+        $inc: { likes: 1 },
+      }).exec();
+    } else {
+      await Post.findByIdAndUpdate(data.postId, {
+        $inc: { dislikes: 1 },
+      }).exec();
+    }
+  }
+  return r;
+}
+
+async function updateRating(rating, changedRating) {
+  let existingRating = rating.get("rating");
+
+  // [mongodb] cannot update existing field to undefined without deleting it
+  existingRating = (existingRating === undefined) ? null : existingRating;
+  changedRating = (changedRating === undefined) ? null : changedRating;
+
+  let updateMap = {};
+  if (existingRating === true) {
+    if (changedRating === null) {
+      updateMap = {
+        $inc: { likes: -1 },
+      };
+    } else if (changedRating === false) {
+      updateMap = {
+        $inc: { likes: -1, dislikes: 1 },
+      };
+    }
+  } else if (existingRating === false) {
+    if (changedRating === null) {
+      updateMap = {
+        $inc: { dislikes: -1 },
+      };
+    } else if (changedRating === true) {
+      updateMap = {
+        $inc: { likes: 1, dislikes: -1 },
+      };
+    }
+  } else if (existingRating === null) {
+    if (changedRating === false) {
+      updateMap = {
+        $inc: { dislikes: 1 },
+      };
+    } else if (changedRating === true) {
+      updateMap = {
+        $inc: { likes: 1 },
+      };
+    }
+  }
+
+  if (changedRating === false && existingRating === null) {
+    console.log(updateMap);
+    console.log(await Post.findOne(rating.get("postId")).exec());
+    console.log(rating);
+  }
+
+  if (changedRating != existingRating) {
+    await Rating.findByIdAndUpdate(rating._id, {
+      rating: changedRating,
+    }).exec();
+
+    const newRating = await Post.findByIdAndUpdate(
+      rating.get("postId"),
+      updateMap
+    ).exec();
+    if (changedRating === false && existingRating === null) {
+      console.log(updateMap);
+      console.log(await Post.findOne(rating.get("postId")).exec());
+      console.log(rating);
+    }
+  
+    return {
+      data: newRating,
+    };
+  } else {
+    return {
+      error: "No Update Required",
+    };
+  }
+}
+
 module.exports = {
   postWithReplies,
   getPosts,
   createPost,
   createUser,
+  createRating,
+  updateRating,
 };

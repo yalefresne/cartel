@@ -1,4 +1,4 @@
-const { User, Post } = require("../db/models");
+const { User, Post, Rating } = require("../db/models");
 
 async function userExists(userId) {
   try {
@@ -18,14 +18,46 @@ async function postExists(postId) {
   }
 }
 
+async function ratingExists(userId, postId) {
+  try {
+    const rating = await Rating.findOne({
+      userId: userId,
+      postId: postId,
+    }).exec();
+    return rating ? rating : null;
+  } catch (error) {
+    return null;
+  }
+}
+
 function validatePostContent(content) {
-  return content !== undefined && content.length !== 0 
-    ? "" : "Content length should be atleast 1 characters long.";
+  return content !== undefined && content.length !== 0
+    ? ""
+    : "Content length should be atleast 1 characters long.";
 }
 
 function validUserName(userName) {
-  return userName !== undefined && userName.length > 2 
-    ? "" : "username length should be atleast 3 characters long.";
+  return userName !== undefined && userName.length > 2
+    ? ""
+    : "username length should be atleast 3 characters long.";
+}
+
+function validateRating(data) {
+  if (
+    data.postId !== undefined &&
+    data.userId !== undefined &&
+    (data.rating === true || data.rating === false) &&
+    postExists(data.postId) &&
+    userExists(data.userId)
+  ) {
+    return {
+      data: new Rating(data),
+    };
+  } else {
+    return {
+      error: "Invalid data",
+    };
+  }
 }
 
 module.exports = {
@@ -33,4 +65,6 @@ module.exports = {
   validUserName,
   userExists,
   postExists,
+  ratingExists,
+  validateRating,
 };

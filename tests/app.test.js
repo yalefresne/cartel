@@ -5,7 +5,7 @@ const request = require("supertest");
 const app = require("../app");
 const { db, connect, actions } = require("../src/db");
 const { createUser } = require("../src/db/actions");
-const { User } = require("../src/db/models");
+const { User, Post, Rating } = require("../src/db/models");
 
 // version of API
 const VER = process.env.API_VER;
@@ -15,7 +15,7 @@ beforeAll(async () => {
   await connect();
 });
 
-beforeEach(async() => {
+beforeEach(async () => {
   user = await createUser("TestUser");
   if (user === null) {
     console.error("Failed to create user.");
@@ -24,7 +24,6 @@ beforeEach(async() => {
 });
 
 describe(`ENDPOINT /api/${VER}/posts`, () => {
-
   test("➕ : POST : create a post", async () => {
     await request(app)
       .post(`/api/${VER}/posts`)
@@ -41,7 +40,6 @@ describe(`ENDPOINT /api/${VER}/posts`, () => {
   });
 
   test("➕ : GET : get a single post with postId, it has a reply.", async () => {
-
     let p = await actions.createPost({
       userId: user._id,
       content: "fifth post",
@@ -112,12 +110,11 @@ describe(`ENDPOINT /api/${VER}/posts`, () => {
   });
 
   test("➕ : POST : Replies are sent to an existing post.'replies' count in 'Post' should be updated.", async () => {
-
     let p = await actions.createPost({
       userId: user._id,
       content: "Post with many replies.",
     });
-    
+
     let q = await actions.createPost({
       userId: user._id,
       content: "first reply to : 'Post with many replies'",
@@ -135,7 +132,9 @@ describe(`ENDPOINT /api/${VER}/posts`, () => {
         expect(pl?.data?.post?._id).toEqual(String(p._id));
         expect(pl?.data?.replies?.length).toEqual(1);
         expect(pl?.data?.replies).toEqual(
-          expect.arrayContaining([expect.objectContaining({ _id: String(q._id) })])
+          expect.arrayContaining([
+            expect.objectContaining({ _id: String(q._id) }),
+          ])
         );
       });
 
@@ -156,13 +155,15 @@ describe(`ENDPOINT /api/${VER}/posts`, () => {
         expect(pl?.data?.post?._id).toEqual(String(p._id));
         expect(pl?.data?.replies?.length).toEqual(2);
         expect(pl?.data?.replies).toEqual(
-          expect.arrayContaining([expect.objectContaining({ _id: String(q._id) }),expect.objectContaining({ _id: String(r._id) })])
+          expect.arrayContaining([
+            expect.objectContaining({ _id: String(q._id) }),
+            expect.objectContaining({ _id: String(r._id) }),
+          ])
         );
       });
   });
 
   test("➖ : GET : get a post with invalid postId. Either the postId is malinformed or post doesn't exist", async () => {
-
     await request(app)
       .get(`/api/${VER}/posts`)
       .send({
@@ -175,47 +176,202 @@ describe(`ENDPOINT /api/${VER}/posts`, () => {
         expect(pl?.error).toEqual(expect.any(String));
         expect(pl?.details).toEqual(expect.any(Object));
       });
-      await request(app)
-        .get(`/api/${VER}/posts`)
-        .send({
-          postId: "611c116dfdbce6f4571c491a",
-          // This is an valid ObjectId, but it doesnt exist in db.
-        })
-        .expect(404)
-        .then((res) => {
-          let pl = res.body;
-          expect(pl?.error).toEqual(expect.any(String));
-        });
+    await request(app)
+      .get(`/api/${VER}/posts`)
+      .send({
+        postId: "611c116dfdbce6f4571c491a",
+        // This is an valid ObjectId, but it doesnt exist in db.
+      })
+      .expect(404)
+      .then((res) => {
+        let pl = res.body;
+        expect(pl?.error).toEqual(expect.any(String));
+      });
   });
 
   test("➖ : POST : Reply to a post, that doesn't exist.", async () => {
+    await request(app)
+      .post(`/api/${VER}/posts`)
+      .send({
+        replyId: "thisisaninvalidobjectid",
+        // This is an invalid ObjectId which throws CastError
+        userId: user._id,
+        content: "ok",
+      })
+      .expect(404)
+      .then((res) => {
+        let pl = res.body;
+        expect(pl?.error).toContain("NotFound");
+      });
+    await request(app)
+      .post(`/api/${VER}/posts`)
+      .send({
+        replyId: "611c116dfdbce6f4571c491a",
+        // This is an invalid ObjectId which throws CastError
+        userId: String(user._id),
+        content: "ok",
+      })
+      .expect(404)
+      .then((res) => {
+        let pl = res?.body;
+        expect(pl?.error).toContain("NotFound");
+      });
+  });
+});
+
+describe(`ENDPOINT /api/${VER}/rating`, () => {
+  //Transitions:
+  // like -> dislike -> neutral -> dislike -> like -> neutral -> like
+  test("➕ : RATING : create/update a ratings in a post", async () => {
+    let p = await actions.createPost({
+      userId: user._id,
+      content: "rated post",
+    });
 
     await request(app)
-    .post(`/api/${VER}/posts`)
-    .send({
-      replyId: "thisisaninvalidobjectid",
-      // This is an invalid ObjectId which throws CastError
-      userId: user._id,
-      content: "ok"
-    })
-    .expect(404)
-    .then((res) => {
-      let pl = res.body;
-      expect(pl?.error).toContain("NotFound");
-    });
+      .post(`/api/${VER}/rating`)
+      .send({
+        userId: user._id,
+        postId: p._id,
+        rating: true,
+      })
+      .expect(200)
+      .then(async (res) => {
+        const data = res.body;
+        expect(data?.data).toBe("success");
+        const rating = await Rating.findOne({
+          userId: user._id,
+          postId: p._id,
+        }).exec();
+        expect(rating).toEqual(expect.anything());
+        const updatedPost = await Post.findById(p._id).exec();
+        expect(updatedPost.get("likes")).toBe(1);
+        expect(updatedPost.get("dislikes")).toBe(0);
+      });
+
     await request(app)
-    .post(`/api/${VER}/posts`)
-    .send({
-      replyId: "611c116dfdbce6f4571c491a",
-      // This is an invalid ObjectId which throws CastError
-      userId: String(user._id),
-      content: "ok"
-    })
-    .expect(404)
-    .then((res) => {
-      let pl = res?.body;
-      expect(pl?.error).toContain("NotFound");
-    });
+      .post(`/api/${VER}/rating`)
+      .send({
+        userId: user._id,
+        postId: p._id,
+        rating: false,
+      })
+      .expect(200)
+      .then(async (res) => {
+        const data = res.body;
+        expect(data?.data).toBe("success");
+        const updatedRating = await Rating.findOne({
+          userId: user._id,
+          postId: p._id,
+        }).exec();
+        expect(updatedRating).toEqual(expect.anything());
+        const updatedPost = await Post.findById(p._id).exec();
+        expect(updatedPost.get("likes")).toBe(0);
+        expect(updatedPost.get("dislikes")).toBe(1);
+      });
+
+    await request(app)
+      .post(`/api/${VER}/rating`)
+      .send({
+        userId: user._id,
+        postId: p._id,
+      })
+      .expect(200)
+      .then(async (res) => {
+        const data = res.body;
+        expect(data?.data).toBe("success");
+        const updatedPost = await Post.findById(p._id).exec();
+        const rating = await Rating.findOne({
+          userId: user._id,
+          postId: p._id,
+        }).exec();
+        expect(rating).toEqual(expect.anything());
+        expect(updatedPost.get("likes")).toBe(0);
+        expect(updatedPost.get("dislikes")).toBe(0);
+      });
+
+      await request(app)
+      .post(`/api/${VER}/rating`)
+      .send({
+        userId: user._id,
+        postId: p._id,
+        rating: false,
+      })
+      .expect(200)
+      .then(async (res) => {
+        const data = res.body;
+        expect(data?.data).toBe("success");
+        const updatedPost = await Post.findById(p._id).exec();
+        const rating = await Rating.findOne({
+          userId: user._id,
+          postId: p._id,
+        }).exec();
+        expect(rating).toEqual(expect.anything());
+        expect(updatedPost.get("likes")).toBe(0);
+        expect(updatedPost.get("dislikes")).toBe(1);
+      });
+
+      await request(app)
+      .post(`/api/${VER}/rating`)
+      .send({
+        userId: user._id,
+        postId: p._id,
+        rating: true,
+      })
+      .expect(200)
+      .then(async (res) => {
+        const data = res.body;
+        expect(data?.data).toBe("success");
+        const updatedPost = await Post.findById(p._id).exec();
+        const rating = await Rating.findOne({
+          userId: user._id,
+          postId: p._id,
+        }).exec();
+        expect(rating).toEqual(expect.anything());
+        expect(updatedPost.get("likes")).toBe(1);
+        expect(updatedPost.get("dislikes")).toBe(0);
+      });
+
+      await request(app)
+      .post(`/api/${VER}/rating`)
+      .send({
+        userId: user._id,
+        postId: p._id,
+      })
+      .expect(200)
+      .then(async (res) => {
+        const data = res.body;
+        expect(data?.data).toBe("success");
+        const updatedPost = await Post.findById(p._id).exec();
+        const rating = await Rating.findOne({
+          userId: user._id,
+          postId: p._id,
+        }).exec();
+        expect(rating).toEqual(expect.anything());
+        expect(updatedPost.get("likes")).toBe(0);
+        expect(updatedPost.get("dislikes")).toBe(0);
+      });
+
+      await request(app)
+      .post(`/api/${VER}/rating`)
+      .send({
+        userId: user._id,
+        postId: p._id,
+        rating: true,
+      })
+      .expect(200)
+      .then(async (res) => {
+        const data = res.body;
+        expect(data?.data).toBe("success");
+        const updatedPost = await Post.findById(p._id).exec();
+        const rating = await Rating.findOne({
+          userId: user._id,
+          postId: p._id,
+        }).exec();
+        expect(rating).toEqual(expect.anything());
+        expect(updatedPost.get("likes")).toBe(1);
+        expect(updatedPost.get("dislikes")).toBe(0);
+      });
   });
 });
 
@@ -223,6 +379,6 @@ afterEach(async () => {
   await db.dropDatabase();
 });
 
-afterAll(async ()=> {
+afterAll(async () => {
   await db.close();
 });

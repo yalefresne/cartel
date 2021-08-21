@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "jest --coverage",
+    "test-async": "--detectOpenHandles", 
     "coverage": "jest --collect-coverage"
   },
   "repository": {
