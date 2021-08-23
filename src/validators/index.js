@@ -36,10 +36,30 @@ function validatePostContent(content) {
     : "Content length should be atleast 1 characters long.";
 }
 
-function validUserName(userName) {
-  return userName !== undefined && userName.length > 2
-    ? ""
-    : "username length should be atleast 3 characters long.";
+async function validCredentials(username, password) {
+  let userErr =
+    username !== undefined && username.length > 2
+      ? ""
+      : "username should be atleast 3 characters long";
+
+  const passErr =
+    password !== undefined && password.length > 7
+      ? ""
+      : "password should be atleast 8 characters long";
+
+  if (!userErr && !passErr) {
+    const existingUser = await User.findOne({ username }).exec();
+    if (existingUser) {
+      userErr = "username already exists";
+    }
+  }
+
+  return !userErr && !passErr
+    ? null
+    : {
+        username: userErr,
+        password: passErr,
+      };
 }
 
 function validateRating(data) {
@@ -60,11 +80,23 @@ function validateRating(data) {
   }
 }
 
+function getTokenFromHeaders(req) {
+  const {
+    headers: { authorization },
+  } = req;
+
+  if (authorization && authorization.split(" ")[0] === "Token") {
+    return authorization.split(" ")[1];
+  }
+  return null;
+}
+
 module.exports = {
   validatePostContent,
-  validUserName,
+  validCredentials,
   userExists,
   postExists,
   ratingExists,
   validateRating,
+  getTokenFromHeaders,
 };

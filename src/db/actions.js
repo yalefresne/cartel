@@ -10,6 +10,7 @@ const {
   validatePostContent,
   validUserName,
   validateRating,
+  validCredentials,
 } = require("../validators");
 const { randomUserSuffix } = require("../utils");
 
@@ -80,34 +81,13 @@ async function createPost(data) {
   }
 }
 
-async function createUser(name) {
-  if (validUserName(name) === "") {
-    try {
-      const maxTries = 12;
-      let tries = 0;
-      while (tries < maxTries) {
-        const can = name + "#" + randomUserSuffix();
-        const r = await User.findOne({ userName: can }).exec();
-        if (r === null) {
-          let user = new User({
-            userName: can,
-          });
-          await user.save();
-          return user;
-        }
-        tries += 1;
-      }
-      throw new Error(
-        `Tried ${maxTries} times, but couldn't create user for ${name}`
-      );
-    } catch (err) {
-      console.error(err);
-      return null;
-    }
-  } else {
-    console.log("Hello");
-    return null;
-  }
+async function createUser(username, password) {
+  let user = new User({
+    username: username,
+  });
+  await user.setPassword(password);
+  await user.save();
+  return user;
 }
 
 async function createRating(data) {
@@ -131,8 +111,8 @@ async function updateRating(rating, changedRating) {
   let existingRating = rating.get("rating");
 
   // [mongodb] cannot update existing field to undefined without deleting it
-  existingRating = (existingRating === undefined) ? null : existingRating;
-  changedRating = (changedRating === undefined) ? null : changedRating;
+  existingRating = existingRating === undefined ? null : existingRating;
+  changedRating = changedRating === undefined ? null : changedRating;
 
   let updateMap = {};
   if (existingRating === true) {
@@ -175,7 +155,7 @@ async function updateRating(rating, changedRating) {
     const newRating = await Post.findByIdAndUpdate(
       rating.get("postId"),
       updateMap
-    ).exec();  
+    ).exec();
     return {
       data: newRating,
     };

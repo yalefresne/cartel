@@ -1,9 +1,10 @@
 const router = require("express").Router();
 const actions = require("../../../db/actions");
-const { ratingExists } = require("../../../validators");
+const { ratingExists, validCredentials } = require("../../../validators");
 const middlewares = require("../middlewares");
+const passport = require("passport");
 
-router.get("/posts", middlewares.isDbReady, async (req, res) => {
+router.get("/posts", async (req, res) => {
   const postId = req.body.postId;
   if (postId) {
     try {
@@ -38,7 +39,7 @@ router.get("/posts", middlewares.isDbReady, async (req, res) => {
 
 router.post(
   "/posts",
-  middlewares.isDbReady,
+
   middlewares.isAuthenticated,
   async (req, res) => {
     try {
@@ -65,7 +66,7 @@ router.post(
 
 router.post(
   "/rating",
-  middlewares.isDbReady,
+
   middlewares.isAuthenticated,
   async (req, res) => {
     let data = req.body;
@@ -76,27 +77,59 @@ router.post(
       const { error } = await actions.createRating(data);
       if (error) {
         res.status(400).json({
-          error: error
+          error: error,
         });
       } else {
         res.json({
-          data: "success"
+          data: "success",
         });
       }
     } else {
       const { error } = await actions.updateRating(rating, data.rating);
       if (error) {
         res.status(400).json({
-          error: error
+          error: error,
         });
       } else {
         res.json({
-          data: "success"
+          data: "success",
         });
       }
-
     }
   }
 );
+
+router.post("/login", async (req, res, next) => {
+  passport.authenticate(
+    "local",
+    { session: false },
+    (err, passportUser, info) => {
+      if (err) next(err);
+      if (passportUser) {
+        const user = passportUser;
+        user.token = passportUser.generateJWT();
+        return res.json({ user: user.toAuthJSON() });
+      }
+
+      return status(400).info;
+    }
+  )(req, res, next);
+});
+
+router.post("/register", async (req, res) => {
+  const { username, password } = req.body;
+  const invalid = await validCredentials(username, password);
+  if (!invalid) {
+    const user = await actions.createUser(username, password);
+    user.token = passportUser.generateJWT();
+    return res.json({ user: user.toAuthJSON() });
+  } else {
+    res.status(400).json({
+      error: invalid,
+    });
+  }
+});
+
+router.post("/user", (req, res) => {});
 
 module.exports = router;

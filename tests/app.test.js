@@ -16,7 +16,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  user = await createUser("TestUser");
+  user = await createUser("TestUser", "Password");
   if (user === null) {
     console.error("Failed to create user.");
     throw new Error("Failed to create user.");
