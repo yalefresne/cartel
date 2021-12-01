@@ -1,3 +1,3 @@
-Cartel Backend
+Cartel API
 basic twitter clone.
 

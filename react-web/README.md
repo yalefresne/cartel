@@ -1,3 +1,3 @@
-Cartel API
+Cartel Web App
 basic twitter clone.
 
