@@ -3,7 +3,6 @@ import { Box, Layer } from "grommet";
 import { auth } from "../config/firebase";
 import { GoogleAuthProvider } from "firebase/auth";
 import { StyledFirebaseAuth } from "react-firebaseui";
-import { useAuth } from "../context/AuthContext";
 
 const uiConfig = {
   signInFlow: 'popup',
@@ -18,11 +17,11 @@ const uiConfig = {
 
 /**
  * Sign In Layer
- * @param  {closeConfirm} closeConfirm should toggle between view/hide this dialog.
+ * @param  {toggleDialog} toggleDialog should toggle between view/hide this dialog.
  */
-const SignIn = ({ closeConfirm }) => {
+const Login = ({ toggleDialog }) => {
   return (
-    <Layer position="center" onClickOutside={closeConfirm} onEsc={closeConfirm}>
+    <Layer position="center" onClickOutside={toggleDialog} onEsc={toggleDialog}>
       <Box
         pad="medium"
         gap="small"
@@ -47,4 +46,4 @@ const SignIn = ({ closeConfirm }) => {
   );
 };
 
-export default SignIn;
+export default Login;

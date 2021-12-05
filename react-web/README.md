@@ -3,7 +3,7 @@
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Important
-Add the firebase credentials to a .env file at the root of this react-app.
+Add the firebase credentials to a .env file at the root of this Project.
 
 ## Available Scripts
 

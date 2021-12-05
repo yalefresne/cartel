@@ -1,57 +1,85 @@
 import { Box, Nav } from "grommet";
-import { Home, User, SettingsOption, Logout, Login } from "grommet-icons";
+import { Home, User, SettingsOption, Logout, Login as LoginIcon } from "grommet-icons";
 
 import { useAuth } from "../context/AuthContext";
 
 import SideBarButton from "./SideBarButton";
 import { useState } from "react";
-import SignIn from "./SignIn";
-import { auth } from '../config/firebase';
+import Login from "./Login";
+import { auth } from "../config/firebase";
+import ConfirmDialog from "./ConfirmDialog";
 
-const signOutHandler = () => {
-  auth.signOut();
-}
 
 const SideBar = () => {
   const user = useAuth();
-
-  const [signInPopUp, setSignInPopUp] = useState(false);
-
-  const closeConfirm = () => {
-    setSignInPopUp((prev) => !prev);
+  
+  const [loginDialog, setLoginDialog] = useState(false);
+  const [logoutDialog, setLogoutDialog] = useState(false);
+  
+  const toggleLogin = () => {
+    setLoginDialog((prev) => !prev);
+  };
+  
+  const toggleLogout = () => {
+    setLogoutDialog((prev) => !prev);
   };
 
-  if (user && signInPopUp) {
-      setSignInPopUp(false);
+  const logoutHandler = () => {
+    auth.signOut();
+    toggleLogout();
+  };
+
+  // edge case
+  if (user && loginDialog) {
+    setLoginDialog(false);
   }
 
+  const authActionButton = (user) => {
+    if (user === undefined) return null;
+
+    if (user !== null)
+      return (
+        <SideBarButton
+          icon={<Logout size="medium" />}
+          label="Logout"
+          onClick={toggleLogout}
+          to={window.location.pathname}
+        />
+      );
+
+    return (
+      <SideBarButton
+        icon={<LoginIcon size="medium" />}
+        label="Login"
+        onClick={toggleLogin}
+        to={window.location.pathname}
+      />
+    );
+  };
+
   return (
-    <Box
-      align="start"
-      justify="between"
-      style={{ position: "fixed" }}
-      fill="vertical"
-    >
-      <Box align="center" justify="center">
-        <Nav align="center" flex={false} direction="column" gap="xxsmall">
-          <SideBarButton icon={<Home size="medium" />} label="Home" />
-          <SideBarButton icon={<User size="medium" />} label="Profile" />
-          <SideBarButton
-            icon={<SettingsOption size="medium" />}
-            label="Settings"
-          />
-          {user ? (
-            <SideBarButton icon={<Logout size="medium" />} label="Log Out" onClick={signOutHandler} />
-          ) : (
-            <SideBarButton
-              icon={<Login size="medium" />}
-              label="Log In"
-              onClick={closeConfirm}
-            />
-          )}
-          {signInPopUp && <SignIn closeConfirm={closeConfirm} />}
-        </Nav>
-      </Box>
+    <Box direction="column" align="start" justify="start" fill="vertical">
+      <Nav flex={false} direction="column" gap="xxsmall">
+        <SideBarButton icon={<Home size="medium" />} label="Home" to="/home" />
+
+        <SideBarButton
+          icon={<User size="medium" />}
+          label="Profile"
+          to="/profile"
+        />
+
+        <SideBarButton
+          icon={<SettingsOption size="medium" />}
+          label="Settings"
+          to="/settings"
+        />
+
+        {authActionButton(user)}
+
+        {/* Dialogs */}
+        {loginDialog && <Login toggleDialog={toggleLogin} />}
+        {logoutDialog && <ConfirmDialog Header="Logout" BodyText="Are you Sure?" closeConfirm={toggleLogout} confirmHandler={logoutHandler}/>}
+      </Nav>
     </Box>
   );
 };

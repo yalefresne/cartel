@@ -8,6 +8,10 @@ import Notification from "./components/Notification";
 // Contexts
 import { NotifyContextProvider } from "./context/NotifyContext";
 import { AuthContextProvider } from "./context/AuthContext";
+import Home from "./pages/Home";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
+import InfoBar from "./components/InfoBar";
 
 const theme = {
   global: {
@@ -21,32 +25,34 @@ const theme = {
 
 function App() {
   return (
-    <Router>
-      <AuthContextProvider>
-        <Grommet theme={theme} full>
-          <Box overflow="auto" direction="row" fill>
-            <NotifyContextProvider>
+    <AuthContextProvider>
+      <Grommet theme={theme} full>
+        <Box overflow="auto" direction="row" fill>
+          <NotifyContextProvider>
+            <Router>
               <Box
                 fill
                 direction="row"
-                justify="start"
+                justify="center"
                 align="start"
-                gap="large"
+                margin={{ horizontal: "small", top: "small" }}
               >
-                <SideBar />
-                <Box direction="row" justify="center" fill>
+                <SideBar style={{ position: "fixed" }} />
+                <Box direction="row" width="large">
                   <Routes>
-                    <Route exact path="/home" component={null} />
-                    <Route path="/activity/:id" component={null} />
+                    <Route path="/home" element={<Home />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/settings" element={<Settings />} />
                   </Routes>
                   <Notification />
                 </Box>
+                <InfoBar />
               </Box>
-            </NotifyContextProvider>
-          </Box>
-        </Grommet>
-      </AuthContextProvider>
-    </Router>
+            </Router>
+          </NotifyContextProvider>
+        </Box>
+      </Grommet>
+    </AuthContextProvider>
   );
 }
 
