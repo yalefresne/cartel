@@ -9,9 +9,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return  MaterialApp(
       title: _title,
-      home: MyStatefulWidget(),
+     theme:  ThemeData(
+        primarySwatch: Colors.deepPurple,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home:const MyStatefulWidget(),
     );
   }
 }
@@ -24,20 +28,53 @@ class MyStatefulWidget extends StatefulWidget {
 }
 
 class _MyStatefulWidgetState extends State<MyStatefulWidget> {
-  int _count = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('CartelTime'),
+        elevation: 1,
+        backgroundColor: Colors.grey[200],
+        leading: Container(
+          margin: const EdgeInsets.all(10.0),
+          child: const Icon(Icons.person)
+        ),
+        title: const Text(
+          'Feeds',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
-      body: Center(child: Text('Button Pressed $_count times.')),
+      body: listOfTweets(),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => setState(() => _count++),
-        tooltip: 'Increase Counter',
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.edit),
+        onPressed: () {},
+      ),
+      bottomNavigationBar: BottomAppBar(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            showButton(Icons.home, Colors.purple),
+            showButton(Icons.search, Color.fromARGB(115, 190, 154, 154)),
+            showButton(Icons.notifications, Color.fromARGB(115, 190, 154, 154)),
+            showButton(Icons.mail_outline, Color.fromARGB(115, 190, 154, 154)),
+          ],
+        ),
       ),
     );
   }
+  
+  listOfTweets() {}
+Widget showButton(IconData icon, Color color) {
+    return IconButton(
+      icon: Icon(
+        icon,
+        color: color,
+      ),
+      onPressed: () {},
+    );
+  }
+
 }
