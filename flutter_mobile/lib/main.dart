@@ -5,7 +5,7 @@ void main() => runApp(const MyApp());
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  static const String _title = 'Flutter Code Sample';
+  static const String _title = 'CartelTime';
 
   @override
   Widget build(BuildContext context) {
@@ -30,12 +30,12 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sample Code'),
+        title: const Text('CartelTime'),
       ),
-      body: Center(child: Text('You have pressed the button $_count times.')),
+      body: Center(child: Text('Button Pressed $_count times.')),
       floatingActionButton: FloatingActionButton(
         onPressed: () => setState(() => _count++),
-        tooltip: 'Increment Counter',
+        tooltip: 'Increase Counter',
         child: const Icon(Icons.add),
       ),
     );
